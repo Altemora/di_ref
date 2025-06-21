@@ -3,25 +3,21 @@ part of 'di.dart';
 enum _ServiceFactoryType { factory, constant, lazy, referenced }
 
 class _ServiceFactory<T extends Object, G extends Object> {
-  final _ServiceFactoryType factoryType;
   final _DiImplementation _diInstance;
-  final _TypeRegistration registeredIn;
 
+  final _ServiceFactoryType factoryType;
+  final _TypeRegistration registeredIn;
   final FactoryFunc<T>? creationFunction;
   final ReferenceFactoryFunc<T>? creationReferencedFunction;
   final ReferenceGroupFactoryFunc<T, G>? creationReferencedGroupFunction;
-
   final DisposingFunc<T>? disposeFunction;
-
   final DiGroup group;
 
   T? _instance;
 
   T? get instance => _instance;
 
-  void resetInstance() {
-    _instance = null;
-  }
+  void resetInstance() => _instance = null;
 
   late final Type registrationType;
 
@@ -49,8 +45,7 @@ class _ServiceFactory<T extends Object, G extends Object> {
   FutureOr dispose() {
     if (instance is DiDisposable) {
       return (instance! as DiDisposable).dispose();
-    }
-    if (instance != null) {
+    } else if (instance != null) {
       return disposeFunction?.call(instance!);
     }
   }
@@ -89,7 +84,7 @@ class _ServiceFactory<T extends Object, G extends Object> {
                 : creationReferencedGroupFunction!(reference!, groupValue as G);
           }
 
-          _diInstance._referenceManager.registerGroupWithReference(group, reference!);
+          _diInstance._referenceManager.registerGroupForReference(group, reference!);
 
           return instance!;
         case _ServiceFactoryType.lazy:

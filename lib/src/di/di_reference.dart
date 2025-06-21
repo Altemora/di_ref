@@ -53,6 +53,8 @@ class _DiReferenceImplementation extends DiReference {
 
   void holdGroup(DiGroup group) => groups.add(group);
 
+  void releaseGroup(DiGroup group) => groups.remove(group);
+
   @override
   DiReference createReference({Object? defaultGroup, String? debugLabel}) =>
       _DiReferenceImplementation(_diInstance, defaultGroup: defaultGroup, debugLabel: debugLabel);
@@ -61,5 +63,13 @@ class _DiReferenceImplementation extends DiReference {
   List<Object> getAllLazyInstances() => _diInstance.getAllLazyInstances();
 
   @override
-  List<Object> getAllReferencedInstances() => _diInstance.getAllReferencedInstances();
+  List<Object> getAllReferencedInstances({DiReference? reference}) =>
+      _diInstance.getAllReferencedInstances(reference: reference);
+
+  @override
+  List<Object> getReferencedInstances() => getAllReferencedInstances(reference: this);
+
+  @override
+  String toString() =>
+      "${runtimeType == _DiReferenceImplementation ? "DiReference" : "$runtimeType"}(${debugLabel ?? ""})";
 }

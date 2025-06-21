@@ -6,7 +6,7 @@ class _DiReferenceManager {
   final LinkedHashMap<DiGroup, Set<_DiReferenceImplementation>> _groupedReferences =
       LinkedHashMap<DiGroup, Set<_DiReferenceImplementation>>();
 
-  void registerGroupWithReference(DiGroup group, _DiReferenceImplementation reference) {
+  void registerGroupForReference(DiGroup group, _DiReferenceImplementation reference) {
     if (_groupedReferences[group] == null) {
       _groupedReferences[group] = {};
     }
@@ -16,13 +16,23 @@ class _DiReferenceManager {
     reference.holdGroup(group);
   }
 
+  void unregisterGroupForAllReferences(DiGroup group) {
+    final referencesSet = _groupedReferences[group];
+    if (referencesSet == null) return;
+
+    for (final reference in referencesSet) {
+      reference.releaseGroup(group);
+    }
+    _groupedReferences.remove(group);
+  }
+
   void unregisterReference(_DiReferenceImplementation reference) {
     for (final group in reference.groups) {
-      _releaseReferenceFroGroup(reference, group);
+      _releaseReferenceForGroup(reference, group);
     }
   }
 
-  void _releaseReferenceFroGroup(_DiReferenceImplementation reference, DiGroup group) {
+  void _releaseReferenceForGroup(_DiReferenceImplementation reference, DiGroup group) {
     final referencesSet = _groupedReferences[group];
     if (referencesSet == null) {
       Di._instance._resetReferencedByGroup(group);

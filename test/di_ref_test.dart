@@ -1,4 +1,5 @@
 import 'package:di_ref/di_ref.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class IdContainer {
@@ -44,16 +45,16 @@ void main() {
   final diReference2 = diProvider.createReference(debugLabel: 'diReference2');
 
   diRegister
-    ..registerAsSingle(IdContainerA("IdA"))
-    ..registerAsLazySingle(() => IdContainerB("IdB"))
-    ..registerAsFactory(() => IdContainerC("IdC"))
-    ..registerAsFactory(() => IdContainerD("IdD"))
+    ..registerAsSingle(IdContainerA('IdA'))
+    ..registerAsLazySingle(() => IdContainerB('IdB'))
+    ..registerAsFactory(() => IdContainerC('IdC'))
+    ..registerAsFactory(() => IdContainerD('IdD'))
     ..registerAsReferencedSingle(
-      create: (ref) => IdContainerE("IdE"),
+      create: (ref) => IdContainerE('IdE'),
       createWithGroup: (ref, group) => IdContainerE(group.toString()),
     )
     ..registerAsReferencedSingle<IdContainerF, String>(
-      create: (ref) => IdContainerF("IdF", ref.get(), ref.get()),
+      create: (ref) => IdContainerF('IdF', ref.get(), ref.get()),
       createWithGroup: (ref, group) => IdContainerF(group.toString(), ref.get(group: group), diProvider.get()),
     );
 
@@ -66,12 +67,12 @@ void main() {
   });
 
   test('Get instances from DI', () {
-    expect(diProvider.get<IdContainerA>().id, "IdA");
-    expect(diProvider.get<IdContainerB>().id, "IdB");
-    expect(diProvider.get<IdContainerC>().id, "IdC");
-    expect(diProvider.get<IdContainerD>().id, "IdD");
-    expect(diReference1.get<IdContainerE>().id, "IdE");
-    expect(diReference2.get<IdContainerF>().id, "IdF");
+    expect(diProvider.get<IdContainerA>().id, 'IdA');
+    expect(diProvider.get<IdContainerB>().id, 'IdB');
+    expect(diProvider.get<IdContainerC>().id, 'IdC');
+    expect(diProvider.get<IdContainerD>().id, 'IdD');
+    expect(diReference1.get<IdContainerE>().id, 'IdE');
+    expect(diReference2.get<IdContainerF>().id, 'IdF');
   });
 
   test('Is lazy exist after call', () {
@@ -108,14 +109,14 @@ void main() {
   });
 
   test('DiReference get function work with groups', () {
-    expect(diReference1.get<IdContainerE>().id, "IdE");
-    expect(diReference1.get<IdContainerE>(group: "groupA").id, "groupA");
-    expect(diReference1.get<IdContainerE>(group: "groupB").id, "groupB");
-    expect(diReference1.get<IdContainerE>(group: "groupA") == diReference1.get<IdContainerE>(), false);
-    expect(diReference1.get<IdContainerE>(group: "groupA") == diReference1.get<IdContainerE>(group: "groupA"), true);
-    expect(diReference1.get<IdContainerE>(group: "groupA") == diReference1.get<IdContainerE>(group: "groupB"), false);
-    expect(diReference1.get<IdContainerE>(group: "groupA") == diReference2.get<IdContainerE>(group: "groupA"), true);
-    expect(diReference1.get<IdContainerE>(group: "groupA") == diReference2.get<IdContainerE>(group: "groupB"), false);
+    expect(diReference1.get<IdContainerE>().id, 'IdE');
+    expect(diReference1.get<IdContainerE>(group: 'groupA').id, 'groupA');
+    expect(diReference1.get<IdContainerE>(group: 'groupB').id, 'groupB');
+    expect(diReference1.get<IdContainerE>(group: 'groupA') == diReference1.get<IdContainerE>(), false);
+    expect(diReference1.get<IdContainerE>(group: 'groupA') == diReference1.get<IdContainerE>(group: 'groupA'), true);
+    expect(diReference1.get<IdContainerE>(group: 'groupA') == diReference1.get<IdContainerE>(group: 'groupB'), false);
+    expect(diReference1.get<IdContainerE>(group: 'groupA') == diReference2.get<IdContainerE>(group: 'groupA'), true);
+    expect(diReference1.get<IdContainerE>(group: 'groupA') == diReference2.get<IdContainerE>(group: 'groupB'), false);
   });
 
   test('DiReference cascade grouping works', () {
@@ -159,6 +160,139 @@ void main() {
   });
 
   /// MARKER_A: Add new instances only after previous test
+  test('Di check resetReferenced release the instance', () {
+    final diReferenceWillStay = diProvider.createReference();
+    final diReferenceWillStay2 = diProvider.createReference();
+
+    expect(diProvider.checkReferencedInstanceExists<IdContainerF>('diReferenceWillStayGroup'), false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('diReferenceWillStayGroup'), false);
+    expect(diReferenceWillStay.groups.isEmpty, true);
+    diReferenceWillStay.get<IdContainerF>(group: 'diReferenceWillStayGroup');
+    diReferenceWillStay2.get<IdContainerF>(group: 'diReferenceWillStayGroup');
+    expect(diReferenceWillStay.isDisposed, false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerF>('diReferenceWillStayGroup'), true);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('diReferenceWillStayGroup'), true);
+    expect(diReferenceWillStay.groups.isEmpty, false);
+    diReferenceWillStay.resetReferenced<IdContainerF>(group: 'diReferenceWillStayGroup');
+    diReferenceWillStay.resetReferenced<IdContainerE>(group: 'diReferenceWillStayGroup');
+    expect(diReferenceWillStay.groups.isEmpty, true);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerF>('diReferenceWillStayGroup'), false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('diReferenceWillStayGroup'), false);
+    diReferenceWillStay.get<IdContainerF>(group: 'diReferenceWillStayGroup');
+    diReferenceWillStay2.get<IdContainerF>(group: 'diReferenceWillStayGroup');
+    expect(diProvider.checkReferencedInstanceExists<IdContainerF>('diReferenceWillStayGroup'), true);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('diReferenceWillStayGroup'), true);
+    diReferenceWillStay.dispose();
+    diReferenceWillStay2.dispose();
+    expect(diProvider.checkReferencedInstanceExists<IdContainerF>('diReferenceWillStayGroup'), false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('diReferenceWillStayGroup'), false);
+  });
+
+  testWidgets('DiReferenceProvider injects DiReference into context and disposes properly', (tester) async {
+    DiReference? receivedRef;
+    await tester.pumpWidget(
+      DiReferenceProvider(
+        builder: (context) {
+          receivedRef = context.ref;
+          return const Placeholder();
+        },
+      ),
+    );
+
+    expect(receivedRef != null, true);
+    expect(receivedRef!.isDisposed, false);
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(receivedRef!.isDisposed, true);
+  });
+
+  testWidgets('DiReferenceProvider injects DiReference and reference dispose instance correctly', (tester) async {
+    DiReference? receivedRef;
+    await tester.pumpWidget(
+      DiReferenceProvider(
+        builder: (context) {
+          receivedRef = context.ref;
+          return const Placeholder();
+        },
+      ),
+    );
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), false);
+
+    IdContainerE containerE = receivedRef!.get<IdContainerE>(group: 'fromWidgetProvider');
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), true);
+    expect(containerE == receivedRef!.get<IdContainerE>(group: 'fromWidgetProvider'), true);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), false);
+    expect(() => containerE == receivedRef!.get<IdContainerE>(group: 'fromWidgetProvider'), throwsA(isA<String>()));
+    expect(containerE == diReference2.get<IdContainerE>(group: 'fromWidgetProvider'), false);
+    diReference2.resetReferenced<IdContainerE>(group: 'fromWidgetProvider');
+    expect(receivedRef!.isDisposed, true);
+  });
+
+  testWidgets('DiReferenceProvider disposes only when last holder disappears', (tester) async {
+    Key? outerKey = Key('outerKey');
+    Key? innerKey = Key('innerKey');
+    DiReference? outerRef;
+    DiReference? innerRef;
+
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromInnerWidgetProvider'), false);
+    await tester.pumpWidget(
+      DiReferenceProvider(
+        key: outerKey,
+        debugLabel: 'outerProvider',
+        builder: (outerContext) {
+          outerRef = outerContext.ref;
+          outerRef!.get<IdContainerE>(group: 'fromWidgetProvider');
+
+          return DiReferenceProvider(
+            key: innerKey,
+            debugLabel: 'innerProvider',
+            builder: (innerContext) {
+              innerRef = innerContext.ref;
+              innerRef!.get<IdContainerE>(group: 'fromWidgetProvider');
+              innerRef!.get<IdContainerE>(group: 'fromInnerWidgetProvider');
+              return const Placeholder();
+            },
+          );
+        },
+      ),
+    );
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), true);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromInnerWidgetProvider'), true);
+    expect(innerRef!.isDisposed, false);
+    expect(outerRef!.isDisposed, false);
+
+    final instanceOuter = outerRef!.get<IdContainerE>(group: 'fromWidgetProvider');
+    final instanceInner = innerRef!.get<IdContainerE>(group: 'fromWidgetProvider');
+    final instanceInnerOnly = innerRef!.get<IdContainerE>(group: 'fromInnerWidgetProvider');
+
+    expect(instanceOuter == instanceInner, true);
+    expect(instanceInner == instanceInnerOnly, false);
+
+    await tester.pumpWidget(
+      DiReferenceProvider(
+        key: outerKey,
+        builder: (context) {
+          expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), true);
+          return const Placeholder();
+        },
+      ),
+    );
+
+    expect(innerRef!.isDisposed, true);
+    expect(outerRef!.isDisposed, false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), true);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromInnerWidgetProvider'), false);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    expect(innerRef!.isDisposed, true);
+    expect(outerRef!.isDisposed, true);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromWidgetProvider'), false);
+    expect(diProvider.checkReferencedInstanceExists<IdContainerE>('fromInnerWidgetProvider'), false);
+  });
 
   /// WARNING: this tests will reset lazy and referenced object so should be complete latest.
   test('Is resetting lazy singleton works', () {
@@ -193,9 +327,8 @@ void main() {
 
   test('Is disposing reference works', () {
     diReference1.dispose();
-    expect(diReference1.groups, []);
-    expect(diProvider.getAllReferencedInstances().length == 4, true);
     diReference2.dispose();
+    expect(diReference1.groups, []);
     expect(diReference2.groups, []);
     expect(diProvider.getAllReferencedInstances().isEmpty, true);
   });

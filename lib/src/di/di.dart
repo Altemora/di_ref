@@ -64,7 +64,7 @@ abstract interface class DiProvider {
 
   List<Object> getAllLazyInstances();
 
-  List<Object> getAllReferencedInstances();
+  List<Object> getAllReferencedInstances({DiReference? reference});
 }
 
 abstract interface class DiRegister {
@@ -106,6 +106,8 @@ abstract class DiReference implements DiProvider, DiDisposable {
 
   @override
   T call<T extends Object>({Type? type, Object? group});
+
+  List<Object> getReferencedInstances();
 }
 
 sealed class Di implements DiRegister, DiProvider {

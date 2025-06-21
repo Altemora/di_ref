@@ -11,6 +11,18 @@ class DiReferenceProvider extends StatefulWidget {
 
   @override
   State<DiReferenceProvider> createState() => _DiReferenceProviderState();
+
+  static DiReference? maybeGetReferenceOf(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<_DiReferenceInherited>()?.reference;
+  }
+
+  static DiReference getReferenceOf(BuildContext context) {
+    final DiReference? reference = maybeGetReferenceOf(context);
+    if (reference == null) {
+      throw Exception('No DiReference found in context. Please make to add `DiReferenceProvider` above');
+    }
+    return reference;
+  }
 }
 
 class _DiReferenceProviderState extends State<DiReferenceProvider> {
@@ -18,11 +30,11 @@ class _DiReferenceProviderState extends State<DiReferenceProvider> {
 
   @override
   void didChangeDependencies() {
-    _reference = (widget.instance ?? Di.instance).createReference(
+    super.didChangeDependencies();
+    _reference ??= (widget.instance ?? Di.instance).createReference(
       defaultGroup: widget.defaultGroup,
       debugLabel: widget.debugLabel,
     );
-    super.didChangeDependencies();
   }
 
   @override
@@ -57,4 +69,8 @@ class _DiReferenceInherited extends InheritedWidget {
 
   @override
   bool updateShouldNotify(covariant _DiReferenceInherited oldWidget) => reference != oldWidget.reference;
+}
+
+extension BuildContextDiReference on BuildContext {
+  DiReference get ref => DiReferenceProvider.getReferenceOf(this);
 }

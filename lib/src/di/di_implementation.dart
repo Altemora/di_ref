@@ -115,78 +115,60 @@ class _DiImplementation implements Di {
     }
 
     if (factoryToRemove.instance != null) {
-      if (disposing != null) {
-        final dispose = disposing.call(factoryToRemove.instance! as T);
-        if (dispose is Future) {
-          await dispose;
-        }
-      } else {
-        final dispose = factoryToRemove.dispose();
-        if (dispose is Future) {
-          await dispose;
-        }
-      }
+      final dispose = disposing == null ? factoryToRemove.dispose() : disposing.call(factoryToRemove.instance! as T);
+      if (dispose is Future) await dispose;
     }
   }
 
   @override
   FutureOr resetReferenced<T extends Object>({Object? group, FutureOr Function(T p1)? disposingFunction}) async {
-    _resetReferencedByGroup(DiGroup(T, group ?? const NonGroup()));
+    final diGroup = DiGroup(T, group ?? const NonGroup());
+    final result = _resetReferencedByGroup(diGroup);
+    _referenceManager.unregisterGroupForAllReferences(diGroup);
+    return result;
   }
 
   FutureOr _resetReferencedByGroup<T>(DiGroup group, {FutureOr Function(T p1)? disposingFunction}) async {
-    _ServiceFactory instanceFactory;
+    final _ServiceFactory instanceFactory = _findFactoryByGroup(group);
 
-    instanceFactory = _findFactoryByGroup(group);
     _throwIfNot(
       instanceFactory.factoryType == _ServiceFactoryType.referenced,
       StateError('There is no type $T registered as Referenced in Di'),
     );
 
-    dynamic disposeReturn;
+    FutureOr? disposeReturn;
     if (instanceFactory.instance != null) {
-      if (disposingFunction != null) {
-        disposeReturn = disposingFunction.call(instanceFactory.instance! as T);
-      } else {
-        disposeReturn = instanceFactory.dispose();
-      }
+      disposeReturn = (disposingFunction == null
+          ? instanceFactory.dispose()
+          : disposingFunction.call(instanceFactory.instance! as T));
     }
 
     instanceFactory.resetInstance();
     instanceFactory.registeredIn.removeServiceForGroup(group);
 
-    if (disposeReturn is Future) {
-      await disposeReturn;
-    }
+    if (disposeReturn is Future) await disposeReturn;
   }
 
   @override
   FutureOr resetLazy<T extends Object>({T? instance, FutureOr Function(T)? disposingFunction}) async {
-    _ServiceFactory instanceFactory;
+    final _ServiceFactory instanceFactory = instance == null
+        ? _findFactoryByGroup<T>(DiGroup(T))
+        : _findFactoryByInstance(instance);
 
-    if (instance != null) {
-      instanceFactory = _findFactoryByInstance(instance);
-    } else {
-      instanceFactory = _findFactoryByGroup<T>(DiGroup(T));
-    }
     _throwIfNot(
       instanceFactory.factoryType == _ServiceFactoryType.lazy,
       StateError('There is no type ${instance.runtimeType} registered as LazySingle in Di'),
     );
 
-    dynamic disposeReturn;
+    FutureOr? disposeReturn;
     if (instanceFactory.instance != null) {
-      if (disposingFunction != null) {
-        disposeReturn = disposingFunction.call(instanceFactory.instance! as T);
-      } else {
-        disposeReturn = instanceFactory.dispose();
-      }
+      disposeReturn = (disposingFunction == null
+          ? instanceFactory.dispose()
+          : disposingFunction.call(instanceFactory.instance! as T));
     }
 
     instanceFactory.resetInstance();
-    if (disposeReturn is Future) {
-      await disposeReturn;
-    }
+    if (disposeReturn is Future) await disposeReturn;
   }
 
   @override
@@ -236,10 +218,8 @@ class _DiImplementation implements Di {
   @override
   Future<void> reset({bool dispose = true}) async {
     if (dispose) {
-      if (dispose) {
-        for (final factory in _allFactories.reversed) {
-          await factory.dispose();
-        }
+      for (final factory in _allFactories.reversed) {
+        await factory.dispose();
       }
       _typeRegistrations.clear();
     }
@@ -254,12 +234,7 @@ class _DiImplementation implements Di {
     DisposingFunc<T>? disposeFunc,
   }) {
     _throwIfNot(const Object() is! T, 'Di: You have to provide type.`');
-
-    final existingTypeRegistration = _typeRegistrations[T];
-
-    if (existingTypeRegistration != null) {
-      throw ArgumentError('Type $T is already registered inside Di. ');
-    }
+    _throwIf(_typeRegistrations[T] != null, ArgumentError('Type $T is already registered inside Di. '));
 
     final _TypeRegistration typeRegistration = _typeRegistrations.putIfAbsent(T, () => _TypeRegistration<T, G>());
 
@@ -291,9 +266,14 @@ class _DiImplementation implements Di {
   }
 
   @override
-  List<Object> getAllReferencedInstances() {
+  List<Object> getAllReferencedInstances({DiReference? reference}) {
     return _allFactories
-        .where((it) => it.factoryType == _ServiceFactoryType.referenced && it.instance != null)
+        .where(
+          (it) =>
+              it.factoryType == _ServiceFactoryType.referenced &&
+              it.instance != null &&
+              (reference?.groups.contains(it.group) ?? true),
+        )
         .map((it) => it.instance!)
         .toList();
   }
