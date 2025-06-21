@@ -13,7 +13,7 @@ class _ServiceFactory<T extends Object, G extends Object> {
 
   final DisposingFunc<T>? disposeFunction;
 
-  final DiGroup<G> group;
+  final DiGroup group;
 
   T? _instance;
 
@@ -70,18 +70,23 @@ class _ServiceFactory<T extends Object, G extends Object> {
 
           if (instance == null) {
             final groupValue = group.value;
-            _throwIfNot(
-              groupValue != null || (groupValue == null && creationReferencedFunction != null),
-              'Di: There is not group less Referenced factory for type $T',
+            _throwIf(
+              groupValue == const NonGroup() && creationReferencedFunction == null,
+              'Di: There is not group less Referenced factory for type `$T`',
             );
-            _throwIfNot(
-              groupValue == null || creationReferencedGroupFunction != null,
-              'Di: There is not group Referenced factory for type $T',
+            _throwIf(
+              groupValue != const NonGroup() && creationReferencedGroupFunction == null,
+              'Di: There is not group Referenced factory for type `$T`',
+            );
+            _throwIf(
+              groupValue != const NonGroup() && groupValue is! G,
+              'Di: Group value type `$G` specified for `$T` referenced factory. '
+              'You provide `${groupValue.runtimeType}` with value `$groupValue` instead.',
             );
 
-            _instance = groupValue != null
-                ? creationReferencedGroupFunction!(reference!, groupValue)
-                : creationReferencedFunction!(reference!);
+            _instance = groupValue == const NonGroup()
+                ? creationReferencedFunction!(reference!)
+                : creationReferencedGroupFunction!(reference!, groupValue as G);
           }
 
           _diInstance._referenceManager.registerGroupWithReference(group, reference!);
@@ -98,7 +103,7 @@ class _ServiceFactory<T extends Object, G extends Object> {
     }
   }
 
-  _ServiceFactory<T, G> copyWithGroup(DiGroup<G> group) => _ServiceFactory(
+  _ServiceFactory<T, G> copyWithGroup(DiGroup group) => _ServiceFactory(
     _diInstance,
     factoryType,
     group,

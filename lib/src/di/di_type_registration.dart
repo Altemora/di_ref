@@ -14,9 +14,9 @@ class _TypeRegistration<T extends Object, G extends Object> {
 
   bool get isEmpty => groupedFactories.isEmpty;
 
-  _ServiceFactory<T, G>? getFactory(DiGroup<G> group) {
+  _ServiceFactory<T, G>? getFactory(DiGroup group) {
     final factory = groupedFactories[_defaultGroup];
-    if (group.value == null) return factory;
+    if (group.value == const NonGroup()) return factory;
 
     if (groupedFactories[group] == null && factory != null) {
       groupedFactories[group] = factory.copyWithGroup(group);
@@ -27,8 +27,8 @@ class _TypeRegistration<T extends Object, G extends Object> {
 
   void setFactory(_ServiceFactory<T, G> serviceFactory) => groupedFactories[_defaultGroup] = serviceFactory;
 
-  void removeServiceForGroup(DiGroup<G> group) {
-    if (group.value == null) return;
+  void removeServiceForGroup(DiGroup group) {
+    if (group.value == const NonGroup()) return;
     groupedFactories[group]?.dispose();
     groupedFactories.remove(group);
   }

@@ -4,7 +4,8 @@ import 'dart:collection';
 part 'di_implementation.dart';
 part 'di_reference.dart';
 part 'di_reference_manager.dart';
-part 'di_service_factory.dart';part 'di_type_registration.dart';
+part 'di_service_factory.dart';
+part 'di_type_registration.dart';
 
 typedef FactoryFunc<T> = T Function();
 typedef ReferenceFactoryFunc<T> = T Function(DiReference ref);
@@ -12,8 +13,12 @@ typedef ReferenceGroupFactoryFunc<T, G> = T Function(DiReference ref, G group);
 typedef DisposingFunc<T> = FutureOr Function(T param);
 typedef ScopeDisposeFunc = FutureOr Function();
 
-class DiGroup<G extends Object> {
-  const DiGroup(this.type, [this.value])
+class NonGroup {
+  const NonGroup();
+}
+
+class DiGroup {
+  const DiGroup(this.type, [this.value = const NonGroup()])
     : assert(
         type != Object,
         'Di: The compiler could not infer the type. You have to provide a type '
@@ -21,7 +26,7 @@ class DiGroup<G extends Object> {
       );
 
   final Type type;
-  final G? value;
+  final Object value;
 
   @override
   bool operator ==(Object other) {
@@ -55,7 +60,7 @@ abstract interface class DiProvider {
 
   bool checkReferencedInstanceExists<T extends Object>([Object? group]);
 
-  DiReference createReference({String? defaultGroup, String? debugLabel});
+  DiReference createReference({Object? defaultGroup, String? debugLabel});
 
   List<Object> getAllLazyInstances();
 
@@ -105,7 +110,10 @@ abstract class DiReference implements DiProvider, DiDisposable {
 
 sealed class Di implements DiRegister, DiProvider {
   static const _debugLabel = 'general';
+
   static final _instance = _DiImplementation(debugLabel: _debugLabel);
+
+  static Di get instance => _instance;
 
   static DiRegister get register => _instance;
 

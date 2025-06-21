@@ -17,7 +17,7 @@ class _DiImplementation implements Di {
   final _referenceManager = _DiReferenceManager();
   final LinkedHashMap<Type, _TypeRegistration> _typeRegistrations = LinkedHashMap<Type, _TypeRegistration>();
 
-  _ServiceFactory<T, G>? _findFirstFactoryByGroupOrNull<T extends Object, G extends Object>(DiGroup<G> group) {
+  _ServiceFactory<T, G>? _findFirstFactoryByGroupOrNull<T extends Object, G extends Object>(DiGroup group) {
     final _TypeRegistration? typeRegistration = _typeRegistrations[group.type];
 
     final foundFactory = typeRegistration?.getFactory(group);
@@ -47,7 +47,7 @@ class _DiImplementation implements Di {
 
   @override
   T get<T extends Object>({Type? type, Object? group, _DiReferenceImplementation? reference}) {
-    final instanceFactory = _findFactoryByGroup<T>(DiGroup(type ?? T, group));
+    final instanceFactory = _findFactoryByGroup<T>(DiGroup(type ?? T, group ?? const NonGroup()));
 
     final Object instance;
     instance = instanceFactory.getObject(reference);
@@ -95,11 +95,11 @@ class _DiImplementation implements Di {
   }
 
   @override
-  bool isRegistered<T extends Object>({Object? instance, String? group}) {
+  bool isRegistered<T extends Object>({Object? instance, Object? group}) {
     if (instance != null) {
       return _findFirstFactoryByInstanceOrNull(instance) != null;
     } else {
-      return _findFirstFactoryByGroupOrNull<T, Object>(DiGroup(T, group)) != null;
+      return _findFirstFactoryByGroupOrNull<T, Object>(DiGroup(T, group ?? const NonGroup())) != null;
     }
   }
 
@@ -131,7 +131,7 @@ class _DiImplementation implements Di {
 
   @override
   FutureOr resetReferenced<T extends Object>({Object? group, FutureOr Function(T p1)? disposingFunction}) async {
-    _resetReferencedByGroup(DiGroup(T, group));
+    _resetReferencedByGroup(DiGroup(T, group ?? const NonGroup()));
   }
 
   FutureOr _resetReferencedByGroup<T>(DiGroup group, {FutureOr Function(T p1)? disposingFunction}) async {
@@ -191,7 +191,7 @@ class _DiImplementation implements Di {
 
   @override
   bool checkReferencedInstanceExists<T extends Object>([Object? group]) {
-    final instanceFactory = _findFactoryByGroup<T>(DiGroup(T, group));
+    final instanceFactory = _findFactoryByGroup<T>(DiGroup(T, group ?? const NonGroup()));
     _throwIfNot(
       instanceFactory.factoryType == _ServiceFactoryType.referenced,
       StateError('There is no type $T registered as Referenced in Di'),
@@ -279,7 +279,7 @@ class _DiImplementation implements Di {
   }
 
   @override
-  DiReference createReference({String? defaultGroup, String? debugLabel}) =>
+  DiReference createReference({Object? defaultGroup, String? debugLabel}) =>
       _DiReferenceImplementation(this, defaultGroup: defaultGroup, debugLabel: debugLabel);
 
   @override

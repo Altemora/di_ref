@@ -52,11 +52,13 @@ void main() {
       create: (ref) => IdContainerE("IdE"),
       createWithGroup: (ref, group) => IdContainerE(group.toString()),
     )
-    ..registerAsReferencedSingle(
+    ..registerAsReferencedSingle<IdContainerF, String>(
       create: (ref) => IdContainerF("IdF", ref.get(), ref.get()),
       createWithGroup: (ref, group) => IdContainerF(group.toString(), ref.get(group: group), diProvider.get()),
     );
 
+  /// WARNING: There is a test what calculate instances after this scope of tests.
+  /// So add other instances usage only after `MARKER_A` comment
   test('Is lazy exist before first call', () {
     expect(diProvider.checkLazyInstanceExists<IdContainerB>(), false);
     expect(diProvider.checkReferencedInstanceExists<IdContainerE>(), false);
@@ -138,7 +140,27 @@ void main() {
     expect(containerF == containerFGroupA, false);
   });
 
-  //WARNING: this tests will reset lazy and referenced object so should be complete latest.
+  test('Di check actual instances', () {
+    expect(diReference1.groups, [
+      DiGroup(IdContainerE),
+      DiGroup(IdContainerF),
+      DiGroup(IdContainerE, 'groupA'),
+      DiGroup(IdContainerE, 'groupB'),
+      DiGroup(IdContainerF, 'groupA'),
+      DiGroup(IdContainerF, 'groupB'),
+    ]);
+    expect(diReference2.groups, [
+      DiGroup(IdContainerE),
+      DiGroup(IdContainerF),
+      DiGroup(IdContainerE, 'groupA'),
+      DiGroup(IdContainerE, 'groupB'),
+    ]);
+    expect(diProvider.getAllReferencedInstances().length == 6, true);
+  });
+
+  /// MARKER_A: Add new instances only after previous test
+
+  /// WARNING: this tests will reset lazy and referenced object so should be complete latest.
   test('Is resetting lazy singleton works', () {
     final instanceA = diProvider.get<IdContainerB>();
     final instanceB = diProvider.get<IdContainerB>();
@@ -170,21 +192,6 @@ void main() {
   });
 
   test('Is disposing reference works', () {
-    expect(diReference1.groups, [
-      DiGroup(IdContainerE, null),
-      DiGroup(IdContainerF, null),
-      DiGroup(IdContainerE, 'groupA'),
-      DiGroup(IdContainerE, 'groupB'),
-      DiGroup(IdContainerF, 'groupA'),
-      DiGroup(IdContainerF, 'groupB'),
-    ]);
-    expect(diReference2.groups, [
-      DiGroup(IdContainerE, null),
-      DiGroup(IdContainerF, null),
-      DiGroup(IdContainerE, 'groupA'),
-      DiGroup(IdContainerE, 'groupB'),
-    ]);
-    expect(diProvider.getAllReferencedInstances().length == 6, true);
     diReference1.dispose();
     expect(diReference1.groups, []);
     expect(diProvider.getAllReferencedInstances().length == 4, true);

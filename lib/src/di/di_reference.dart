@@ -7,7 +7,7 @@ class _DiReferenceImplementation extends DiReference {
   @override
   final String? debugLabel;
   @override
-  final String? defaultGroup;
+  final Object? defaultGroup;
   @override
   final Set<DiGroup> groups = {};
 
@@ -17,7 +17,7 @@ class _DiReferenceImplementation extends DiReference {
   @override
   T get<T extends Object>({Type? type, Object? group}) {
     _throwIf(isDisposed, "Di: reference ${debugLabel == null ? '$this' : '$debugLabel : $this'} already disposed.");
-    final currentGroup = group ?? defaultGroup;
+    final currentGroup = group ?? defaultGroup ?? const NonGroup();
 
     final result = _diInstance.get<T>(type: type, group: currentGroup, reference: this);
 
@@ -54,7 +54,7 @@ class _DiReferenceImplementation extends DiReference {
   void holdGroup(DiGroup group) => groups.add(group);
 
   @override
-  DiReference createReference({String? defaultGroup, String? debugLabel}) =>
+  DiReference createReference({Object? defaultGroup, String? debugLabel}) =>
       _DiReferenceImplementation(_diInstance, defaultGroup: defaultGroup, debugLabel: debugLabel);
 
   @override
